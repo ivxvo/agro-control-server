@@ -17,6 +17,11 @@ module.exports = function(app) {
         controller.userBoard
     );
 
+    app.get("/api/test/users", 
+        [authJwt.verifyToken],
+        controller.getUsersAll
+    );
+    
     app.get("/api/test/user/:id", 
         [authJwt.verifyToken],
         controller.userBoard
@@ -37,8 +42,8 @@ module.exports = function(app) {
         controller.moderatorBoard
     );
 
-    app.get("/api/test/admin",
-        [authJwt.verifyToken],
-        controller.adminBoard
-    );
+    // app.get("/api/test/admin",
+    //     [authJwt.verifyToken],
+    //     controller.adminBoard
+    // );
 };

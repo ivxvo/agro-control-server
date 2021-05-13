@@ -31,11 +31,15 @@ exports.userBoard = (req, res) => {
 exports.updateUser = (req, res) => {
     const id = req.params.id;
 
-    User.update({
+    let user = {
         username: req.body.username,
-        email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 8)
-    },
+        email: req.body.email
+    };
+    if(req.body.password) {
+        user["password"] = bcrypt.hashSync(req.body.password, 8);        
+    }
+
+    User.update(user,
     { where: { id: id } })
         .then(num => {
             if (num == 1) {
@@ -80,7 +84,7 @@ exports.deleteUser = (req, res) => {
         });
 };
 
-exports.adminBoard = async (req, res) => {
+exports.getUsersAll = async (req, res) => {
     let users = await User.findAll({
         include: {
             model: Role,
