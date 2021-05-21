@@ -74,15 +74,15 @@ exports.signin = (req, res) => {
         });
 
         let authorities = [];
-        user.getRoles().then(roles => {
-            for(let i = 0; i < roles.length; i++) {
-                authorities.push("ROLE_", + roles[i].name.toUpperCase());
-            }
+        user.getRole().then(role => {
+            // for(let i = 0; i < roles.length; i++) {
+            //     authorities.push("ROLE_", + roles[i].name.toUpperCase());
+            // }
             res.status(200).send({
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                roles: authorities,
+                role: role.name,
                 accessToken: token
             });
         });
@@ -90,4 +90,8 @@ exports.signin = (req, res) => {
     .catch(err => {
         res.status(500).send({ message: err.message });
     });
+};
+
+exports.verify = (req, res) => {
+    res.status(200).send();
 };

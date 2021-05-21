@@ -56,17 +56,19 @@ db.permission.belongsTo(db.action, {
     }
 });
 
-// RoleToUser: Role (many-to-many) User
-db.user.belongsToMany(db.role, {
-    through: "RoleToUser",
-    foreignKey: "userId",
-    otherKey: "roleId"
+// RoleToUser: Role (one-to-many) User
+db.role.hasMany(db.user, {
+    foreignKey: {
+        name: "roleId",
+        allowNull: false
+    }
 });
 
-db.role.belongsToMany(db.user, {
-    through: "RoleToUser",
-    foreignKey: "roleId",
-    otherKey: "userId"
+db.user.belongsTo(db.role, {
+    foreignKey: {
+        name: "roleId",
+        allowNull: false
+    }
 });
 
 // PermissionToRole: Permission (many-to-many) Role

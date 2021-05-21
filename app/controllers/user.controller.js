@@ -86,12 +86,12 @@ exports.deleteUser = (req, res) => {
 
 exports.getUsersAll = async (req, res) => {
     let users = await User.findAll({
+        attributes: ["id", "username", "email"],
         include: {
             model: Role,
+            attributes: ["name"],
             required: true,
-            through: {
-                attributes: []
-            },
+            
             // include: {
             //     model: Permission,
             //     required: true,
@@ -112,8 +112,14 @@ exports.getUsersAll = async (req, res) => {
             // }
         }
         
-    }
-    );
+    });
+
+    // let usersForView = JSON.parse(JSON.stringify(users));
+    // for(let user of usersForView) {
+    //     user.role = user.role.name;
+    // }
+
+    // console.log(`users: ${JSON.stringify(usersForView)}`);
 
     // let permissions = await Permission.findOne({
     //     include: 
