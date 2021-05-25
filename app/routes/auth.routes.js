@@ -12,6 +12,7 @@ module.exports = function(app) {
 
     app.post("/api/auth/signup",
         [
+            authJwt.verifyToken,
             verifySignUp.checkDuplicateUsernameOrEmail,
             verifySignUp.checkRolesExisted
         ],

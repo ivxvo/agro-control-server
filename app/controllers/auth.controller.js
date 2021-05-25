@@ -13,32 +13,32 @@ exports.signup = (req, res) => {
     User.create({
         username: req.body.username,
         email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 8)
+        password: bcrypt.hashSync(req.body.password, 8),
+        roleId: 1 // fix
     })
-        .then(user => {
-            if(req.body.roles) {
-                Role.findAll({
-                    where: {
-                        name: {
-                            [Op.or]: req.body.roles
-                        }
-                    }
-                }).then(roles => {
-                    user.setRoles(roles).then(() => {
-                        res.send({
-                            message: "User was registered successfully!"
-                        });
-                    });
-                });
-            } else {
-                // user role = 1
-                user.setRoles([1]).then(() => {
-                    res.send({
-                        message: "User was registered successfully!"
-                    });
-                });
-            }
-        })
+        // .then(user => {
+        //     if(req.body.role) {
+        //         Role.findOne({
+        //             where: {
+        //                 name: req.body.role                        
+        //             }
+        //         }).then(role => {
+        //             user.setRole(role).then(() => {
+        //                 res.send({
+        //                     message: "User was registered successfully!"
+        //                 });
+        //             });
+        //         });
+        //     } else {
+        //         // user role = 1
+        //         user.setRole([1]).then(() => {
+        //             res.send({
+        //                 message: "User was registered successfully!"
+        //             });
+        //         });
+        //     }
+        // })
+       
         .catch(err => {
             res.status(500).send({
                 message: err.message
