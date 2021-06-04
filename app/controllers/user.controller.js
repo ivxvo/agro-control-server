@@ -1,5 +1,8 @@
 const sequelize = require("../models").sequelize;
 const db = require("../models");
+
+const Op = db.Sequelize.Op;
+
 const User = db.user;
 const Role = db.role;
 const Permission = db.permission;
@@ -7,6 +10,8 @@ const Action = db.action;
 const Subject = db.subject;
 
 let bcrypt = require("bcryptjs");
+
+const { getPagination, getPagingData } = require("../common/pagination");
 
 exports.allAccess = (req, res) => {
     res.status(200).send("Public Content.");
@@ -44,17 +49,20 @@ exports.updateUser = (req, res) => {
         .then(num => {
             if (num == 1) {
                 res.send({
-                    message: "User was updated successfully."
+                    result: globalThis.ReqResult.success,
+                    message: `Пользователь '${user.username}' успешно обновлён.`
                 });
             } else {
                 res.send({
-                    message: `Cannot update User with id=${id}. Maybe User was not found or req.body is empty!`
+                    result: globalThis.ReqResult.error,
+                    message: `Не удалось обновить пользователя '${user.username}'. Возможно пользователь не найден или данные запроса отсутствуют!`
                 });
             }
         })
         .catch(err => {
             res.status(500).send({
-                message: `${err}. Error updating User with id=${id}`
+                result: globalThis.ReqResult.error,
+                message: `Ошибка обновления пользователя '${user.username}'.\r\n${err.message}`
             });
         });
 };
@@ -68,24 +76,35 @@ exports.deleteUser = (req, res) => {
         .then(num => {
             if(num == 1) {
                 res.send({
-                    message: "User was deleted successfully!"
+                    result: globalThis.ReqResult.success,                    
+                    message: `Пользователь (id=${id}) успешно удалён.`
                 });
             } else {
                 res.send({
-                    message: `Cannot delete User with id=${id}. Maybe User was not found!`
+                    result: globalThis.ReqResult.error,
+                    message: `Не удалось удалить пользователя (id=${id}). Возможно пользователь не найден!`
                 });
             }
         })
         .catch(err => {
-            console.error(err);
             res.status(500).send({
-                message: `Cannot delete User with id=${id}`
+                result: globalThis.ReqResult.error,                
+                message: `Ошибка удаления пользователя (id=${id}).\r\n${err}`
             });
         });
 };
 
-exports.getUsersAll = async (req, res) => {
-    let users = await User.findAll({
+exports.getUsersAll = (req, res) => {
+    const { filter, page, size } = req.query;
+
+    let condition = filter ? { field: { [Op.like]: `%${filter}%` } } : null; // fix
+
+    const { limit, offset } = getPagination(page, size);
+
+    User.findAndCountAll({
+        where: condition,
+        limit: limit,
+        offset: offset,
         attributes: ["id", "username", "email"],
         include: {
             model: Role,
@@ -112,7 +131,19 @@ exports.getUsersAll = async (req, res) => {
             // }
         }
         
-    });
+    })
+        .then(data => {
+            const pagingData = getPagingData(data, page, limit);
+            res.send(pagingData);
+            // res.send(data);
+
+        })
+        .catch(err => {
+            res.status(500).send({
+                result: globalThis.ReqResult.error,
+                message: `Не удалось получить пользователей.\r\n${err}`
+            });
+        });
 
     // let usersForView = JSON.parse(JSON.stringify(users));
     // for(let user of usersForView) {
@@ -150,7 +181,16 @@ exports.getUsersAll = async (req, res) => {
         
     // });
 
-    res.status(200).send(users);
+    // const users = await User.findAll({
+    //     attributes: ["id", "username", "email"],
+    //     include: {
+    //         model: Role,
+    //         attributes: ["name"],
+    //         required: true,                      
+    //     }        
+    // });
+
+    // res.status(200).send(users);
 };
 
 exports.moderatorBoard = (req, res) => {

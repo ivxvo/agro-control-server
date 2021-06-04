@@ -3,24 +3,46 @@ const config = require("../config/auth.config.js");
 const db = require("../models");
 const User = db.user;
 
-verifyToken = (req, res, next) => {
+verifyToken = (req, res, next) => {    
     let token = req.headers["x-access-token"];
 
     if(!token) {
         return res.status(403).send({
-            message: "No token provided!"
+            result: globalThis.ReqResult.error,
+            message: "Не предоставлен токен доступа!"
         });
     }
 
     jwt.verify(token, config.secret, (err, decoded) => {
         if(err) {
             return res.status(401).send({
-                message: "Unauthorized!"
+                result: globalThis.ReqResult.error,
+                message: "Не удалось авторизовать пользователя!"
             });
         }
         req.userId = decoded.id;
         next();
     });
+};
+
+isExistUser = (req, res, next) => {
+    User.findByPk(req.userId)
+        .then((user) => {
+            if(user) {
+                next();
+            } else {
+                return res.send({
+                    result: globalThis.ReqResult.error,
+                    message: `Не найден пользователь id=${req.userId}`
+                });
+            }
+        },
+        () => {
+            return res.status(500).send({
+                result: globalThis.ReqResult.error,
+                message: "Не удалось получить данные о пользователе."
+            });
+        });
 };
 
 isAdmin = (req, res, next) => {
@@ -83,6 +105,7 @@ isModeratorOrAdmin = (req, res, next) => {
 
 const authJwt = {
     verifyToken: verifyToken,
+    isExistUser: isExistUser,
     isAdmin: isAdmin,
     isModerator: isModerator,
     isModeratorOrAdmin: isModeratorOrAdmin

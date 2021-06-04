@@ -16,6 +16,12 @@ exports.signup = (req, res) => {
         password: bcrypt.hashSync(req.body.password, 8),
         roleId: 1 // fix
     })
+        .then(() => {
+            res.send({
+                result: globalThis.ReqResult.success,
+                message: `Пользователь '${req.body.username}' успешно создан.`
+            });
+        })
         // .then(user => {
         //     if(req.body.role) {
         //         Role.findOne({
@@ -41,7 +47,8 @@ exports.signup = (req, res) => {
        
         .catch(err => {
             res.status(500).send({
-                message: err.message
+                result: globalThis.ReqResult.error,
+                message: `Не удалось создать пользователя '${req.body.username}'.\r\n${err.message}`
             });
         });
 };
@@ -54,7 +61,10 @@ exports.signin = (req, res) => {
     })
     .then(user => {
         if(!user) {
-            return res.status(404).send({ message: "User Not found."});
+            return res.send({
+                result: globalThis.ReqResult.error,
+                message: `Пользователь '${req.body.username}' не найден!`
+            });
         }    
 
         let passwordIsValid = bcrypt.compareSync(
@@ -64,8 +74,9 @@ exports.signin = (req, res) => {
 
         if(!passwordIsValid) {
             return res.status(401).send({
+                result: globalThis.ReqResult.error,
                 accessToken: null,
-                message: "Invalid Password!"
+                message: "Неверный пароль!"
             });
         }
 
@@ -79,6 +90,8 @@ exports.signin = (req, res) => {
             //     authorities.push("ROLE_", + roles[i].name.toUpperCase());
             // }
             res.status(200).send({
+                result: globalThis.ReqResult.success,
+                message: `Пользователь '${req.body.username}' успешно авторизован.`,
                 id: user.id,
                 username: user.username,
                 email: user.email,
@@ -88,10 +101,16 @@ exports.signin = (req, res) => {
         });
     })
     .catch(err => {
-        res.status(500).send({ message: err.message });
+        res.status(500).send({
+            result: globalThis.ReqResult.error,
+            message: err.message
+        });
     });
 };
 
 exports.verify = (req, res) => {
-    res.status(200).send();
+    res.status(200).send({
+        result: globalThis.ReqResult.success,
+        message: `Валидный токен доступа пользователя '${req.body.username}'.`
+    });
 };

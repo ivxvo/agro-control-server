@@ -13,6 +13,7 @@ module.exports = function(app) {
     app.post("/api/auth/signup",
         [
             authJwt.verifyToken,
+            authJwt.isExistUser,
             verifySignUp.checkDuplicateUsernameOrEmail,
             verifySignUp.checkRolesExisted
         ],
@@ -22,7 +23,10 @@ module.exports = function(app) {
     app.post("/api/auth/signin", controller.signin);
 
     app.post("/api/auth/verify",
-        [ authJwt.verifyToken ],
+        [
+            authJwt.verifyToken,
+            authJwt.isExistUser
+        ],
         controller.verify
     );
 };

@@ -10,39 +10,39 @@ module.exports = function(app) {
         next();
     });
 
-    app.get("/api/test/all", controller.allAccess);
+    app.get("/api/all", controller.allAccess);
 
-    app.get("/api/test/user", 
+    app.get("/api/user", 
         [authJwt.verifyToken],
         controller.userBoard
     );
 
-    app.get("/api/test/users", 
+    app.get("/api/users", 
         [authJwt.verifyToken],
         controller.getUsersAll
     );
     
-    app.get("/api/test/user/:id", 
+    app.get("/api/user/:id", 
         [authJwt.verifyToken],
         controller.userBoard
     );
 
-    app.put("/api/test/user/:id", 
+    app.put("/api/user/:id", 
         [authJwt.verifyToken],
         controller.updateUser
     );
 
-    app.delete("/api/test/user/:id", 
+    app.delete("/api/user/:id", 
         [authJwt.verifyToken],
         controller.deleteUser
     );
 
-    app.get("/api/test/mod",
+    app.get("/api/mod",
         [authJwt.verifyToken],
         controller.moderatorBoard
     );
 
-    // app.get("/api/test/admin",
+    // app.get("/api/admin",
     //     [authJwt.verifyToken],
     //     controller.adminBoard
     // );

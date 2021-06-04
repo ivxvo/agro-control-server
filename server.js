@@ -16,14 +16,20 @@ app.use(bodyParser.json());
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Globals
+globalThis.ReqResult = Object.freeze({
+    success: 1,
+    error: 2
+});
+
 // db //
 const db = require("./app/models");
-// db.sequelize.sync();
+db.sequelize.sync();
 
-// In development, you may need to drop existing tables and re-sync database. Just use 'force: true'
-db.sequelize.sync({ force: true }).then(() => {
-    console.log("Drop and re-sync db.");
-})
+// // In development, you may need to drop existing tables and re-sync database. Just use 'force: true'
+// db.sequelize.sync({ force: true }).then(() => {
+//     console.log("Drop and re-sync db.");
+// })
 
 /// db ///
 
