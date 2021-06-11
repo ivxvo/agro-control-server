@@ -94,10 +94,53 @@ exports.deleteUser = (req, res) => {
         });
 };
 
-exports.getUsersAll = (req, res) => {
-    const { filter, page, size } = req.query;
+/////////// Фильтрация пользователей ////////////////////
+const approval = ["id", "username", "email", "role"];
 
-    let condition = filter ? { field: { [Op.like]: `%${filter}%` } } : null; // fix
+const validateFilter = (filter) => {
+    for(let field in filter) {
+        if(!approval.includes(field)) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const getCondition = (filter) => {
+    let condition = {};
+    if(filter.id) {
+        condition.id = filter.id;
+    }
+    if(filter.username) {
+        condition.username = { [Op.like]: `%${filter.username}%` };
+    }
+    if(filter.email) {
+        condition.email = { [Op.like]: `%${filter.email}%` };
+    }
+    if(filter.role) {
+        condition["$Role.name$"] = { [Op.like]: `%${filter.role}%` };
+    }
+
+    return condition;
+};
+
+exports.getUsersAll = (req, res) => {
+    const { page, size } = req.query;
+
+    let condition = null;
+    if(req.query.filter) {
+        const filter = JSON.parse(req.query.filter);
+
+        if(!validateFilter(filter)) {
+            res.status(403).send({
+                result: globalThis.ReqResult.error,
+                message: "Невозможно получение данных по указанному фильтру!"
+            });
+            return;
+        }
+
+        condition = getCondition(filter);
+    }
 
     const { limit, offset } = getPagination(page, size);
 
