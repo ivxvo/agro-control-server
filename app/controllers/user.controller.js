@@ -13,11 +13,7 @@ let bcrypt = require("bcryptjs");
 
 const { getPagination, getPagingData } = require("../common/pagination");
 
-exports.allAccess = (req, res) => {
-    res.status(200).send("Public Content.");
-};
-
-exports.userBoard = (req, res) => {
+exports.getUserById = (req, res) => {
     const id = req.params.id;
 
     User.findByPk(id)
@@ -26,11 +22,65 @@ exports.userBoard = (req, res) => {
         })
         .catch(err => {
             res.status(500).send({
-                message: `Error retrieving User with id=${id}`
+                result: globalThis.ReqResult.error,
+                message: `Не удалось получить данные пользователя по id=${id}`
             });
         });
+};
 
-    // res.status(200).send("User Content.");
+exports.getFilteredUserProperty = (req, res) => {
+    const { limit, field, searchValue } = req.query;
+
+    const condition = {};
+    condition[field] = { [Op.like]: `%${searchValue}%` };
+
+    User.findAll({
+        limit: limit,
+        order: [[field, "ASC"]],
+        where: condition,
+        attributes: ["id", [field, "name"]],
+        include: {
+            model: Role,
+            required: true
+        }
+    })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(() => {
+            res.status(500).send({
+                result: globalThis.ReqResult.error,
+                message: 'Не удалось получить данные по атрибуту'
+            });
+        });
+    
+};
+
+exports.getFilteredUserRoleProperty = (req, res) => {
+    const { limit, field, searchValue } = req.query;
+
+    const condition = {};
+    condition[field] = { [Op.like]: `%${searchValue}%` };
+    
+    Role.findAll({
+        limit: limit,
+        order: [[field, "ASC"]],
+        where: condition,
+        attributes: ["id", [field, "name"]],
+        include: {
+            model: User,
+            required: true,
+        }
+    })
+        .then(data => {
+            res.send(data);
+        })
+        .catch(() => {
+            res.status(500).send({
+                result: globalThis.ReqResult.error,
+                message: "Не удалось получить данные по атрибуту 'Роль'"
+            });
+        });
 };
 
 exports.updateUser = (req, res) => {
@@ -50,19 +100,19 @@ exports.updateUser = (req, res) => {
             if (num == 1) {
                 res.send({
                     result: globalThis.ReqResult.success,
-                    message: `Пользователь '${user.username}' успешно обновлён.`
+                    message: `Пользователь '${user.username}' успешно обновлён`
                 });
             } else {
                 res.send({
                     result: globalThis.ReqResult.error,
-                    message: `Не удалось обновить пользователя '${user.username}'. Возможно пользователь не найден или данные запроса отсутствуют!`
+                    message: `Не удалось обновить пользователя '${user.username}'`
                 });
             }
         })
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: `Ошибка обновления пользователя '${user.username}'.\r\n${err.message}`
+                message: `Ошибка обновления пользователя '${user.username}'`
             });
         });
 };
@@ -77,19 +127,19 @@ exports.deleteUser = (req, res) => {
             if(num == 1) {
                 res.send({
                     result: globalThis.ReqResult.success,                    
-                    message: `Пользователь (id=${id}) успешно удалён.`
+                    message: `Пользователь (id=${id}) успешно удалён`
                 });
             } else {
                 res.send({
                     result: globalThis.ReqResult.error,
-                    message: `Не удалось удалить пользователя (id=${id}). Возможно пользователь не найден!`
+                    message: `Не удалось удалить пользователя (id=${id})`
                 });
             }
         })
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,                
-                message: `Ошибка удаления пользователя (id=${id}).\r\n${err}`
+                message: `Ошибка удаления пользователя (id=${id})`
             });
         });
 };
@@ -124,6 +174,28 @@ const getCondition = (filter) => {
     return condition;
 };
 
+// Сортировка пользователей
+const getFormattedOrder = (sort) => {
+    let order = [];
+
+    if(sort.id) {
+        order.push(sort.id);
+    }
+    if(sort.username) {
+        order.push(sort.username);
+    }
+    if(sort.email) {
+        order.push(sort.email);
+    }
+    if(sort.role) {
+        let association = sort.role.slice();
+        association.unshift(User.associations.Role);
+        order.push(association);
+    }
+
+    return order;
+};
+
 exports.getUsersAll = (req, res) => {
     const { page, size } = req.query;
 
@@ -134,7 +206,7 @@ exports.getUsersAll = (req, res) => {
         if(!validateFilter(filter)) {
             res.status(403).send({
                 result: globalThis.ReqResult.error,
-                message: "Невозможно получение данных по указанному фильтру!"
+                message: "Невозможно получение данных по указанному фильтру"
             });
             return;
         }
@@ -142,9 +214,16 @@ exports.getUsersAll = (req, res) => {
         condition = getCondition(filter);
     }
 
+    let formattedOrder = null;
+    if(req.query.order) {
+        const order = JSON.parse(req.query.order);
+        formattedOrder = getFormattedOrder(order);
+    }
+
     const { limit, offset } = getPagination(page, size);
 
     User.findAndCountAll({
+        order: formattedOrder,
         where: condition,
         limit: limit,
         offset: offset,
@@ -184,7 +263,7 @@ exports.getUsersAll = (req, res) => {
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: `Не удалось получить пользователей.\r\n${err}`
+                message: `Не удалось получить пользователей`
             });
         });
 

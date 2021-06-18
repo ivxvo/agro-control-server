@@ -9,14 +9,7 @@ module.exports = function(app) {
         );
         next();
     });
-
-    app.get("/api/all", controller.allAccess);
-
-    app.get("/api/user", 
-        [authJwt.verifyToken],
-        controller.userBoard
-    );
-
+    
     app.get("/api/users", 
         [authJwt.verifyToken],
         controller.getUsersAll
@@ -24,7 +17,7 @@ module.exports = function(app) {
     
     app.get("/api/user/:id", 
         [authJwt.verifyToken],
-        controller.userBoard
+        controller.getUserById
     );
 
     app.put("/api/user/:id", 
@@ -36,14 +29,4 @@ module.exports = function(app) {
         [authJwt.verifyToken],
         controller.deleteUser
     );
-
-    app.get("/api/mod",
-        [authJwt.verifyToken],
-        controller.moderatorBoard
-    );
-
-    // app.get("/api/admin",
-    //     [authJwt.verifyToken],
-    //     controller.adminBoard
-    // );
 };

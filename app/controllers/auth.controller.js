@@ -46,9 +46,10 @@ exports.signup = (req, res) => {
         // })
        
         .catch(err => {
+            console.log(err);
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: `Не удалось создать пользователя '${req.body.username}'.\r\n${err.message}`
+                message: `Не удалось создать пользователя '${req.body.username}'`
             });
         });
 };
