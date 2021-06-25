@@ -28,60 +28,98 @@ exports.getUserById = (req, res) => {
         });
 };
 
-exports.getFilteredUserProperty = (req, res) => {
-    const { limit, field, searchValue } = req.query;
+function getFilteredProperty(params) {
+    const { model, limit, field, searchValue } = params;
 
     const condition = {};
     condition[field] = { [Op.like]: `%${searchValue}%` };
 
-    User.findAll({
+    return model.findAll({
         limit: limit,
         order: [[field, "ASC"]],
         where: condition,
         attributes: ["id", [field, "name"]],
         include: {
             model: Role,
-            required: true
-        }
-    })
-        .then(data => {
-            res.send(data);
-        })
-        .catch(() => {
-            res.status(500).send({
-                result: globalThis.ReqResult.error,
-                message: 'Не удалось получить данные по атрибуту'
-            });
-        });
-    
-};
-
-exports.getFilteredUserRoleProperty = (req, res) => {
-    const { limit, field, searchValue } = req.query;
-
-    const condition = {};
-    condition[field] = { [Op.like]: `%${searchValue}%` };
-    
-    Role.findAll({
-        limit: limit,
-        order: [[field, "ASC"]],
-        where: condition,
-        attributes: ["id", [field, "name"]],
-        include: {
-            model: User,
             required: true,
+            attributes: []
         }
-    })
+    });        
+}
+
+exports.getFilteredUserProperty = (req, res) => {
+    const params = {
+        model: User,
+        limit: req.query.limit,
+        field: req.query.field,
+        searchValue: req.query.searchValue
+    };
+    getFilteredProperty(params)
         .then(data => {
             res.send(data);
         })
         .catch(() => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: "Не удалось получить данные по атрибуту 'Роль'"
+                message: 'Не удалось получить данные пользователя по атрибуту'
             });
         });
-};
+}
+
+// exports.getFilteredUserProperty = (req, res) => {
+//     const { limit, field, searchValue } = req.query;
+
+//     const condition = {};
+//     condition[field] = { [Op.like]: `%${searchValue}%` };
+
+//     User.findAll({
+//         limit: limit,
+//         order: [[field, "ASC"]],
+//         where: condition,
+//         attributes: ["id", [field, "name"]],
+//         include: {
+//             model: Role,
+//             required: true
+//         }
+//     })
+//         .then(data => {
+//             res.send(data);
+//         })
+//         .catch(() => {
+//             res.status(500).send({
+//                 result: globalThis.ReqResult.error,
+//                 message: 'Не удалось получить данные по атрибуту'
+//             });
+//         });
+    
+// };
+
+// exports.getFilteredUserRoleProperty = (req, res) => {
+//     const { limit, field, searchValue } = req.query;
+
+//     const condition = {};
+//     condition[field] = { [Op.like]: `%${searchValue}%` };
+    
+//     Role.findAll({
+//         limit: limit,
+//         order: [[field, "ASC"]],
+//         where: condition,
+//         attributes: ["id", [field, "name"]],
+//         include: {
+//             model: User,
+//             required: true,
+//         }
+//     })
+//         .then(data => {
+//             res.send(data);
+//         })
+//         .catch(() => {
+//             res.status(500).send({
+//                 result: globalThis.ReqResult.error,
+//                 message: "Не удалось получить данные по атрибуту 'Роль'"
+//             });
+//         });
+// };
 
 exports.updateUser = (req, res) => {
     const id = req.params.id;

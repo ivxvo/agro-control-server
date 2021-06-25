@@ -29,4 +29,14 @@ module.exports = function(app) {
         [authJwt.verifyToken],
         controller.deleteUser
     );
+
+    app.get("/api/users/filtered",
+        [authJwt.verifyToken],
+        controller.getFilteredUserProperty
+    );
+
+    // app.get("/api/users/roles/filtered",
+    //     [authJwt.verifyToken],
+    //     controller.getFilteredUserRoleProperty
+    // );
 };
