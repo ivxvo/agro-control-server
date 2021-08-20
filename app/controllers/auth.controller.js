@@ -64,7 +64,7 @@ exports.signin = (req, res) => {
         if(!user) {
             return res.send({
                 result: globalThis.ReqResult.error,
-                message: `Пользователь '${req.body.username}' не найден!`
+                message: `Пользователь '${req.body.username}' не найден`
             });
         }    
 
@@ -77,7 +77,7 @@ exports.signin = (req, res) => {
             return res.status(401).send({
                 result: globalThis.ReqResult.error,
                 accessToken: null,
-                message: "Неверный пароль!"
+                message: "Неверный пароль"
             });
         }
 

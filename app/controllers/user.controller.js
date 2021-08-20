@@ -1,4 +1,3 @@
-const sequelize = require("../models").sequelize;
 const db = require("../models");
 
 const Op = db.Sequelize.Op;
@@ -12,6 +11,8 @@ const Subject = db.subject;
 let bcrypt = require("bcryptjs");
 
 const { getPagination, getPagingData } = require("../common/pagination");
+
+const { validateFilter, getFilteredProperty } = require("../common/dropdownFiltering");
 
 exports.getUserById = (req, res) => {
     const id = req.params.id;
@@ -28,32 +29,56 @@ exports.getUserById = (req, res) => {
         });
 };
 
-function getFilteredProperty(params) {
-    const { model, limit, field, searchValue } = params;
+// function getFilteredProperty(params) {
+//     const { model, include, limit, field, searchValue } = params;
 
-    const condition = {};
-    condition[field] = { [Op.like]: `%${searchValue}%` };
+//     const condition = {};
+//     condition[field] = { [Op.like]: `%${searchValue}%` };
 
-    return model.findAll({
-        limit: limit,
-        order: [[field, "ASC"]],
-        where: condition,
-        attributes: ["id", [field, "name"]],
-        include: {
-            model: Role,
-            required: true,
-            attributes: []
-        }
-    });        
-}
+//     return model.findAll({
+//         limit: limit,
+//         order: [[field, "ASC"]],
+//         where: condition,
+//         attributes: ["id", [field, "name"]],
+//         include: {
+//             model: include.required,
+//             required: true,
+//             attributes: []
+//         }
+//     });        
+// }
+
+////////// Фильтрация для получения выпадающего списка //////////
+const approvalDropdown = ["username", "email", "name"];
 
 exports.getFilteredUserProperty = (req, res) => {
-    const params = {
-        model: User,
-        limit: req.query.limit,
-        field: req.query.field,
-        searchValue: req.query.searchValue
+    const { model, field, value, limit } = req.query;
+
+    if(!approvalDropdown.includes(field)) {
+        res.send({
+            result: globalThis.ReqResult.error,
+            message: 'Фильтрация по атрибуту невозможна'
+        });
+    }
+
+    let params = {        
+        limit: limit,
+        field: field,
+        searchValue: value
     };
+    
+    if(model === "User") {
+        params.model = User;
+        params.include = {
+            model: Role           
+        };
+    } else if(model === "Role") {
+        params.model = Role;
+        params.include = {
+            model: User            
+        };
+    }
+
     getFilteredProperty(params)
         .then(data => {
             res.send(data);
@@ -143,14 +168,14 @@ exports.updateUser = (req, res) => {
             } else {
                 res.send({
                     result: globalThis.ReqResult.error,
-                    message: `Не удалось обновить пользователя '${user.username}'`
+                    message: "Не удалось обновить пользователя"
                 });
             }
         })
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: `Ошибка обновления пользователя '${user.username}'`
+                message: "Ошибка обновления пользователя"
             });
         });
 };
@@ -183,30 +208,21 @@ exports.deleteUser = (req, res) => {
 };
 
 /////////// Фильтрация пользователей ////////////////////
-const approval = ["id", "username", "email", "role"];
+const approval = ["userId", "roleId"];
 
-const validateFilter = (filter) => {
-    for(let field in filter) {
-        if(!approval.includes(field)) {
-            return false;
-        }
-    }
-    return true;
-};
-
-const getCondition = (filter) => {
+function getCondition(filter) {
     let condition = {};
-    if(filter.id) {
-        condition.id = filter.id;
-    }
-    if(filter.username) {
-        condition.username = { [Op.like]: `%${filter.username}%` };
-    }
-    if(filter.email) {
-        condition.email = { [Op.like]: `%${filter.email}%` };
-    }
-    if(filter.role) {
-        condition["$Role.name$"] = { [Op.like]: `%${filter.role}%` };
+    
+    if(filter.userId) {
+        condition.id = filter.userId;
+    }   
+
+    if(filter.roleId) {
+        condition["$Role.id$"] = filter.roleId;
+        
+        // else {
+        //     condition["$Role.name$"] = { [Op.like]: `%${filter.role}%` };
+        // }
     }
 
     return condition;
@@ -239,16 +255,8 @@ exports.getUsersAll = (req, res) => {
 
     let condition = null;
     if(req.query.filter) {
-        const filter = JSON.parse(req.query.filter);
-
-        if(!validateFilter(filter)) {
-            res.status(403).send({
-                result: globalThis.ReqResult.error,
-                message: "Невозможно получение данных по указанному фильтру"
-            });
-            return;
-        }
-
+        let filter = JSON.parse(req.query.filter);        
+        validateFilter(filter, approval);
         condition = getCondition(filter);
     }
 
@@ -301,7 +309,7 @@ exports.getUsersAll = (req, res) => {
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: `Не удалось получить пользователей`
+                message: "Не удалось получить пользователей"
             });
         });
 
@@ -351,8 +359,4 @@ exports.getUsersAll = (req, res) => {
     // });
 
     // res.status(200).send(users);
-};
-
-exports.moderatorBoard = (req, res) => {
-    res.status(200).send("Moderator Content.");
 };

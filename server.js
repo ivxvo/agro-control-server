@@ -16,11 +16,9 @@ app.use(bodyParser.json());
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Globals
-globalThis.ReqResult = Object.freeze({
-    success: 1,
-    error: 2
-});
+// globals
+const { initGlobals } = require("./app/common/globals.js");
+initGlobals(globalThis);
 
 // db //
 const db = require("./app/models");
@@ -47,6 +45,9 @@ require("./app/routes/auth.routes.js")(app);
 
 // API/user
 require("./app/routes/user.routes.js")(app);
+
+// API/role
+require("./app/routes/role.routes.js")(app);
 
 /// API ///
 

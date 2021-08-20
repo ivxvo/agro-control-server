@@ -10,27 +10,27 @@ module.exports = function(app) {
         next();
     });
     
-    app.get("/api/users", 
+    app.get("/api/admin/users", 
         [authJwt.verifyToken],
         controller.getUsersAll
     );
     
-    app.get("/api/user/:id", 
+    app.get("/api/admin/user/:id", 
         [authJwt.verifyToken],
         controller.getUserById
     );
 
-    app.put("/api/user/:id", 
+    app.put("/api/admin/user/:id", 
         [authJwt.verifyToken],
         controller.updateUser
     );
 
-    app.delete("/api/user/:id", 
+    app.delete("/api/admin/user/:id", 
         [authJwt.verifyToken],
         controller.deleteUser
     );
 
-    app.get("/api/users/filtered",
+    app.get("/api/admin/users/filtered",
         [authJwt.verifyToken],
         controller.getFilteredUserProperty
     );
