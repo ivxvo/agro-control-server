@@ -2,9 +2,6 @@ const db = require("../models");
 const Op = db.Sequelize.Op;
 
 const Role = db.role;
-const Permission = db.permission;
-const Action = db.action;
-const Subject = db.subject;
 
 const { validateFilter, getFilteredProperty } = require("../common/dropdownFiltering");
 
@@ -20,7 +17,7 @@ exports.getAllRoles = (req, res) => {
     }
 
     Role.findAll({       
-        attributes: [["id", "value"], ["name", "label"]],
+        attributes: [["id", "value"], ["name", "label"], "permissions"],
         where: condition
     }).then(
         data => {
@@ -38,15 +35,16 @@ exports.getAllRoles = (req, res) => {
 exports.addRole = (req, res) => {
     // Save Role to Database
 
-    const { name } = req.body;
+    const { name, permissions } = req.body;
 
     Role.create({
-        name: name        
+        name: name,
+        permissions: permissions
     })
         .then(() => {
             res.send({
                 result: globalThis.ReqResult.success,
-                message: `Роль '${name}' успешно создана.`
+                message: `Роль '${name}' успешно создана`
             });
         })
         // .then(user => {
@@ -84,9 +82,9 @@ exports.addRole = (req, res) => {
 exports.updateRole = (req, res) => {
     const id = req.params.id;
 
-    const { name } = req.body;
+    const { name, permissions } = req.body;
     
-    Role.update({ name: name },
+    Role.update({ name: name, permissions: permissions },
     { where: { id: id } })
         .then(num => {
             if (num == 1) {

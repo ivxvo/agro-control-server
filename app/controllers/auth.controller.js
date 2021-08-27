@@ -90,13 +90,12 @@ exports.signin = (req, res) => {
             // for(let i = 0; i < roles.length; i++) {
             //     authorities.push("ROLE_", + roles[i].name.toUpperCase());
             // }
-            res.status(200).send({
-                result: globalThis.ReqResult.success,
-                message: `Пользователь '${req.body.username}' успешно авторизован.`,
+            res.status(200).send({                
                 id: user.id,
                 username: user.username,
                 email: user.email,
                 role: role.name,
+                permissions: role.permissions,
                 accessToken: token
             });
         });
