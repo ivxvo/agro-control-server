@@ -17,7 +17,9 @@ const { validateFilter, getFilteredProperty } = require("../common/dropdownFilte
 exports.getUserById = (req, res) => {
     const id = req.params.id;
 
-    User.findByPk(id)
+    User.findByPk(id, {
+        attributes: ["id", "username", "email", "roleId"]
+    })
         .then(data => {
             res.send(data);
         })

@@ -10,16 +10,17 @@ let bcrypt = require("bcryptjs");
 
 exports.signup = (req, res) => {
     // Save User to Database
+    const { username, email, password, roleId } = req.body;
     User.create({
-        username: req.body.username,
-        email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 8),
-        roleId: 1 // fix
+        username: username,
+        email: email,
+        password: bcrypt.hashSync(password, 8),
+        roleId: roleId
     })
         .then(() => {
             res.send({
                 result: globalThis.ReqResult.success,
-                message: `Пользователь '${req.body.username}' успешно создан.`
+                message: `Пользователь '${req.body.username}' успешно создан`
             });
         })
         // .then(user => {
