@@ -21,39 +21,18 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-db.tutorials = require("./tutorial.model.js")(sequelize, Sequelize);
-db.user = require("./user.model.js")(sequelize, Sequelize);
-db.role = require("./role.model.js")(sequelize, Sequelize);
-db.permission = require("./permission.model.js")(sequelize, Sequelize);
-db.action = require("./permissionAction.model.js")(sequelize, Sequelize);
-db.subject = require("./permissionSubject.model.js")(sequelize, Sequelize);
+db.user = require("./user.model")(sequelize, Sequelize);
+db.role = require("./role.model")(sequelize, Sequelize);
+db.refreshSession = require("./refreshSession.model")(sequelize, Sequelize);
 
-// Subject (one-to-many) Permission
-db.subject.hasMany(db.permission, {
-    foreignKey: {
-        name: "subjectId",
-        allowNull: false
-    }
-});
-db.permission.belongsTo(db.subject, {
-    foreignKey: {
-        name: "subjectId",
-        allowNull: false
-    }
+db.refreshSession.belongsTo(db.user, {
+    foreignKey: "userId",
+    targetKey: "id"
 });
 
-// Action (one-to-many) Permission
-db.action.hasMany(db.permission, {
-    foreignKey: {
-        name: "actionId",
-        allowNull: false
-    }
-});
-db.permission.belongsTo(db.action, {
-    foreignKey: {
-        name: "actionId",
-        allowNull: false
-    }
+db.user.hasOne(db.refreshSession, {
+    foreignKey: "userId",
+    targetKey: "id"
 });
 
 // RoleToUser: Role (one-to-many) User
@@ -69,19 +48,6 @@ db.user.belongsTo(db.role, {
         name: "roleId",
         allowNull: false
     }
-});
-
-// PermissionToRole: Permission (many-to-many) Role
-db.permission.belongsToMany(db.role, {
-    through: "PermissionToRole",
-    foreignKey: "permissionId",
-    otherKey: "roleId"
-});
-
-db.role.belongsToMany(db.permission, {
-    through: "PermissionToRole",
-    foreignKey: "roleId",
-    otherKey: "permissionId"
 });
 
 db.ROLES = ["user", "admin", "moderator"];

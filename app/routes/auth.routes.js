@@ -22,11 +22,14 @@ module.exports = function(app) {
 
     app.post("/api/auth/signin", controller.signin);
 
-    app.post("/api/auth/verify",
+    app.get("/api/auth/verify",
         [
             authJwt.verifyToken,
             authJwt.isExistUser
         ],
-        controller.verify
+        controller.getCredentials
     );
+
+    app.post("/api/auth/refreshsession", controller.refreshSession);
+    
 };

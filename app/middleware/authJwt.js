@@ -1,114 +1,91 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
+
+const { TokenExpiredError } = jwt;
+
 const db = require("../models");
 const User = db.user;
+const Role = db.role;
 
-verifyToken = (req, res, next) => {    
+const catchError = (err, res) => {
+    if(err instanceof TokenExpiredError) {
+        return res.status(401).send({
+            result: globalThis.ReqResult.error,
+            message: "Авторизация не пройдена. Истёк срок действия токена доступа"
+        });
+    }
+
+    return res.status(401).send({
+        result: globalThis.ReqResult.error,
+        message: "Авторизация не пройдена"
+    });
+};
+
+const verifyToken = (req, res, next) => {    
     let token = req.headers["x-access-token"];
 
     if(!token) {
-        return res.status(403).send({
+        return res.status(401).send({
             result: globalThis.ReqResult.error,
-            message: "Не предоставлен токен доступа!"
+            message: "Не предоставлен токен доступа"
         });
     }
 
     jwt.verify(token, config.secret, (err, decoded) => {
         if(err) {
-            return res.status(401).send({
-                result: globalThis.ReqResult.error,
-                message: "Не удалось авторизовать пользователя!"
-            });
+            return catchError(err, res);
         }
         req.userId = decoded.id;
         next();
     });
 };
 
-isExistUser = (req, res, next) => {
+const checkPermission = (action, subject) => {
+    return async (req, res, next) => {
+        const user = await User.findByPk(req.userId, {
+            attributes: [],
+            include: {
+                model: Role,
+                attributes: ["permissions"],
+                required: true
+            }
+        });
+
+        if(!user.Role.permissions.includes(action + subject)) {
+            return res.status(403).send({
+                result: globalThis.ReqResult.error,
+                message: "Отсутствует право доступа"
+            });
+        }
+
+        next();
+    }
+};
+
+const isExistUser = (req, res, next) => {
     User.findByPk(req.userId)
         .then((user) => {
             if(user) {
                 next();
             } else {
-                return res.send({
+                return res.status(410).send({
                     result: globalThis.ReqResult.error,
-                    message: `Не найден пользователь id=${req.userId}`
+                    message: "Пользователь не зарегистрирован в системе"
                 });
             }
         },
         () => {
             return res.status(500).send({
                 result: globalThis.ReqResult.error,
-                message: "Не удалось получить данные о пользователе."
+                message: "Не удалось получить данные о пользователе"
             });
         });
-};
-
-isAdmin = (req, res, next) => {
-    User.findByPk(req.userId).then(user => {
-        user.getRoles().then(roles => {
-            for(let i = 0; i < roles.length; i++) {
-                if(roles[i].name === "admin") {
-                    next();
-                    return;
-                }
-            }
-
-            res.status(403).send({
-                message: "Require Admin Role!"
-            });
-            return;
-        });
-    });
-};
-
-isModerator = (req, res, next) => {
-    User.findByPk(req.userId).then(user => {
-        user.getRoles().then(roles => {
-            for (let i = 0; i < roles.length; i++) {
-                if(roles[i].name === "moderator") {
-                    next();
-                    return;
-                }
-            }
-
-            res.status(403).send({
-                message: "Require Moderator Role!"
-            });
-            return;
-        })
-    });
-};
-
-isModeratorOrAdmin = (req, res, next) => {
-    User.findByPk(req.userId).then(user => {
-        user.getRoles().then(roles => {
-            for(let i = 0; i < roles.length; i++) {
-                if(roles[i].name === "moderator") {
-                    next();
-                    return;
-                }
-
-                if(roles[i] === "admin") {
-                    next();
-                    return;
-                }
-            }
-
-            res.status(403).send({
-                message: "Require Moderator or Admin Role!"
-            });
-        });
-    })
 };
 
 const authJwt = {
     verifyToken: verifyToken,
-    isExistUser: isExistUser,
-    isAdmin: isAdmin,
-    isModerator: isModerator,
-    isModeratorOrAdmin: isModeratorOrAdmin
+    checkPermission: checkPermission,
+    isExistUser: isExistUser   
 };
 
 module.exports = authJwt;

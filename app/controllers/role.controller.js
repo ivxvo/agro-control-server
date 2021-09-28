@@ -16,8 +16,15 @@ exports.getAllRoles = (req, res) => {
         condition = getCondition(filter);
     }
 
+    let attrs;
+    if(req.query.permissions) {
+        attrs = ["id", "name", "permissions"];
+    } else {
+        attrs = [["id", "value"], ["name", "label"]];
+    }
+
     Role.findAll({       
-        attributes: [["id", "value"], ["name", "label"], "permissions"],
+        attributes: attrs,
         where: condition
     }).then(
         data => {

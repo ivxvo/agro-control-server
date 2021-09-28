@@ -1,9 +1,6 @@
 const db = require("../models");
 const config = require("../config/auth.config.js");
-const User = db.user;
-const Role = db.user.role;
-
-const Op = db.Sequelize.Op;
+const { user: User, refreshSession: RefreshSession} = db;
 
 let jwt = require("jsonwebtoken");
 let bcrypt = require("bcryptjs");
@@ -22,30 +19,7 @@ exports.signup = (req, res) => {
                 result: globalThis.ReqResult.success,
                 message: `Пользователь '${req.body.username}' успешно создан`
             });
-        })
-        // .then(user => {
-        //     if(req.body.role) {
-        //         Role.findOne({
-        //             where: {
-        //                 name: req.body.role                        
-        //             }
-        //         }).then(role => {
-        //             user.setRole(role).then(() => {
-        //                 res.send({
-        //                     message: "User was registered successfully!"
-        //                 });
-        //             });
-        //         });
-        //     } else {
-        //         // user role = 1
-        //         user.setRole([1]).then(() => {
-        //             res.send({
-        //                 message: "User was registered successfully!"
-        //             });
-        //         });
-        //     }
-        // })
-       
+        })              
         .catch(err => {
             console.log(err);
             res.status(500).send({
@@ -56,16 +30,18 @@ exports.signup = (req, res) => {
 };
 
 exports.signin = (req, res) => {
+    const { username: paramUsername, fingerPrint } =  req.body;
+
     User.findOne({
         where: {
-            username: req.body.username
+            username: paramUsername
         }
     })
-    .then(user => {
+    .then(async user => {
         if(!user) {
             return res.send({
                 result: globalThis.ReqResult.error,
-                message: `Пользователь '${req.body.username}' не найден`
+                message: `Пользователь '${paramUsername}' не найден`
             });
         }    
 
@@ -82,23 +58,26 @@ exports.signin = (req, res) => {
             });
         }
 
-        let token = jwt.sign({ id: user.id }, config.secret, {
-            expiresIn: 86400 // 24 hours
-        });
+        let expiredAt = new Date();
+        expiredAt.setSeconds(expiredAt.getSeconds() + config.jwtExpiration);
 
-        let authorities = [];
-        user.getRole().then(role => {
-            // for(let i = 0; i < roles.length; i++) {
-            //     authorities.push("ROLE_", + roles[i].name.toUpperCase());
-            // }
-            res.status(200).send({                
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                role: role.name,
-                permissions: role.permissions,
-                accessToken: token
-            });
+        const token = jwt.sign({ id: user.id }, config.secret, {
+            expiresIn: config.jwtExpiration
+        });
+        
+
+        let refreshSession = await RefreshSession.createRefreshSession(user, fingerPrint);          
+        let role = await user.getRole();
+
+        res.status(200).send({     
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: role.name,
+            permissions: role.permissions,                      
+            accessToken: token,
+            expiryDate: expiredAt.getTime(),
+            refreshToken: refreshSession.refreshToken
         });
     })
     .catch(err => {
@@ -109,9 +88,100 @@ exports.signin = (req, res) => {
     });
 };
 
-exports.verify = (req, res) => {
+exports.refreshSession = async (req, res) => {
+    const { refreshToken: requestToken, fingerPrint: requestPrint } = req.body;
+
+    if(!requestToken) {
+        return res.status(403).json({
+            result: globalThis.ReqResult.error,
+            message: "Для продолжения работы требуется токен обновления"
+        });
+    }
+    if(!requestPrint) {
+        return res.status(403).json({
+            result: globalThis.ReqResult.error,
+            message: "Для продолжения работы требуется идентификация клиентского приложения"
+        });
+    }
+
+    try {
+        let refreshSession =  await RefreshSession.findOne({
+            where: {
+                refreshToken: requestToken
+            }
+        });
+
+        if(!refreshSession) {
+            return res.status(401).json({
+                result: globalThis.ReqResult.error,
+                message: "Токен обновления не найден"
+            });
+        }
+
+        RefreshSession.destroy({
+            where: {
+                id: refreshSession.id
+            }
+        });
+
+        if(RefreshSession.checkIsExpired(refreshSession)) {
+            return res.status(401).json({
+                result: globalThis.ReqResult.error,
+                message: "Истёк сеанс работы в системе. Пожалуйста, авторизуйтесь..."
+            });
+        }
+
+        if(refreshSession.fingerPrint !== requestPrint) {
+            return res.status(403).json({
+                result: globalThis.ReqResult.error,
+                message: "Неверный идентификатор клиентского приложения"
+            });
+        }
+
+        const user = refreshSession.getUser();
+
+        const token = jwt.sign({ id: user.id }, config.secret, {
+            expiresIn: config.jwtExpiration
+        });
+
+        let newRefreshSession = await RefreshSession.createRefreshSession(user, requestPrint);
+
+        user.getRole().then(role => {            
+            res.status(200).json({                
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                role: role.name,
+                permissions: role.permissions,
+                accessToken: token,
+                refreshToken: newRefreshSession.refreshToken
+            });
+        });
+
+    } catch(err) {
+        return res.status(500).send({
+            result: globalThis.ReqResult.error,
+            message: "Не удалось продлить сеанс работы в системе. Пожалуйста, авторизуйтесь..."
+        });
+    }
+};
+
+exports.getCredentials = async (req, res) => {   
+    const user = await User.findByPk(req.userId);
+
+    if(!user) {
+        return res.status(410).send({
+            result: globalThis.ReqResult.error,
+            message: "Пользователь не зарегистрирован в системе"
+        });
+    };
+
+    const role = await user.getRole();
+
     res.status(200).send({
-        result: globalThis.ReqResult.success,
-        message: `Валидный токен доступа пользователя '${req.body.username}'.`
+        username: user.username,
+        email: user.email,
+        role: role.name,
+        permissions: role.permissions      
     });
 };

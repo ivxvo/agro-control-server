@@ -11,7 +11,10 @@ module.exports = function(app) {
     });
     
     app.get("/api/admin/users", 
-        [authJwt.verifyToken],
+        [authJwt.verifyToken,
+        // authJwt.checkPermission(globalThis.PermissionAction.manage, globalThis.PermissionSubject.administration)],
+        authJwt.checkPermission(2000,4)],
+
         controller.getUsersAll
     );
     
@@ -35,8 +38,5 @@ module.exports = function(app) {
         controller.getFilteredUserProperty
     );
 
-    // app.get("/api/users/roles/filtered",
-    //     [authJwt.verifyToken],
-    //     controller.getFilteredUserRoleProperty
-    // );
+    
 };

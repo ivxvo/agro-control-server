@@ -184,6 +184,7 @@ exports.updateUser = (req, res) => {
 
 exports.deleteUser = (req, res) => {
     const id = req.params.id;
+    const user = req.query;
 
     User.destroy({
         where: {id: id}
@@ -192,19 +193,19 @@ exports.deleteUser = (req, res) => {
             if(num == 1) {
                 res.send({
                     result: globalThis.ReqResult.success,                    
-                    message: `Пользователь (id=${id}) успешно удалён`
+                    message: `Пользователь '${user.username}' успешно удалён`
                 });
             } else {
                 res.send({
                     result: globalThis.ReqResult.error,
-                    message: `Не удалось удалить пользователя (id=${id})`
+                    message: `Не удалось удалить пользователя '${user.username}'`
                 });
             }
         })
         .catch(err => {
             res.status(500).send({
                 result: globalThis.ReqResult.error,                
-                message: `Ошибка удаления пользователя (id=${id})`
+                message: `Ошибка удаления пользователя '${user.username}'`
             });
         });
 };
