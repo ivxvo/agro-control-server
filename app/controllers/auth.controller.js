@@ -138,7 +138,10 @@ exports.refreshSession = async (req, res) => {
             });
         }
 
-        const user = refreshSession.getUser();
+        const user = await refreshSession.getUser();
+
+        let expiredAt = new Date();
+        expiredAt.setSeconds(expiredAt.getSeconds() + config.jwtExpiration);
 
         const token = jwt.sign({ id: user.id }, config.secret, {
             expiresIn: config.jwtExpiration
@@ -154,6 +157,7 @@ exports.refreshSession = async (req, res) => {
                 role: role.name,
                 permissions: role.permissions,
                 accessToken: token,
+                expiryDate: expiredAt.getTime(),
                 refreshToken: newRefreshSession.refreshToken
             });
         });

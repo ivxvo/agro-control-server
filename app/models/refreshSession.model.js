@@ -29,7 +29,7 @@ module.exports = (sequelize, Sequelize) => {
             expiryDate: expiredAt.getTime()
         });
 
-        return refreshSession.refreshToken;
+        return refreshSession;
     }
 
     RefreshSession.checkIsExpired = refreshSession => {

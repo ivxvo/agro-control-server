@@ -1,5 +1,5 @@
 module.exports = {
     secret: "xvivalx-scrt-ky",
-    jwtExpiration: 60,
-    jwtRefreshExpiration: 120
+    jwtExpiration: 1800,
+    jwtRefreshExpiration: 5184000
 };

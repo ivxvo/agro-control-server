@@ -31,11 +31,6 @@ db.sequelize.sync();
 
 /// db ///
 
-// simple route
-app.get("/", (req, res) => {
-    res.json({ message: "Welcome to this powerful application." });
-});
-
 // API //
 
 // API/auth
